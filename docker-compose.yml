@@ -29,6 +29,7 @@ services:
       target: prod
     environment:
       NEXT_PUBLIC_ENTRYPOINT: http://caddy
+      NODE_TLS_REJECT_UNAUTHORIZED: 0
 
   caddy:
     build:
