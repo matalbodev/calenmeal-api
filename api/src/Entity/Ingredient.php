@@ -25,18 +25,18 @@ class Ingredient
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['ingredient:read', 'ingredient:write', 'ingredientInMeal:read', 'meal:read'])]
+    #[Groups(['ingredient:read', 'ingredient:write', 'ingredientInMeal:read', 'meal:read', 'calendarMeal:read'])]
     private ?string $name = null;
 
     /**
      * Represents calories per 100g
      */
     #[ORM\Column]
-    #[Groups(['ingredient:read', 'ingredient:write', 'ingredientInMeal:read', 'meal:read'])]
+    #[Groups(['ingredient:read', 'ingredient:write', 'ingredientInMeal:read', 'meal:read', 'calendarMeal:read'])]
     private int $calories;
 
     #[ORM\OneToMany(mappedBy: 'relation', targetEntity: IngredientInMeal::class)]
-    #[Groups(['ingrdientInMeal:read'])]
+    #[Groups(['ingredientInMeal:read'])]
     private Collection $ingredientInMeals;
 
     public function __construct()

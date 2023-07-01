@@ -36,11 +36,11 @@ class IngredientInMeal
     private ?int $id = null;
 
     #[ORM\Column]
-    #[Groups(['ingredientInMeal:read', 'ingredientInMeal:write', 'meal:write', 'meal:read'])]
+    #[Groups(['ingredientInMeal:read', 'ingredientInMeal:write', 'meal:write', 'meal:read','calendarMeal:read', 'calendarMeal:write'])]
     private ?int $quantity = null;
 
     #[ORM\ManyToOne(inversedBy: 'ingredientInMeals')]
-    #[Groups(['ingredientInMeal:read', 'meal:write', 'meal:read'])]
+    #[Groups(['ingredientInMeal:read', 'meal:write', 'meal:read','calendarMeal:read', 'calendarMeal:write'])]
     private ?Ingredient $relation = null;
 
     #[ORM\ManyToMany(targetEntity: Meal::class, mappedBy: 'ingredients')]

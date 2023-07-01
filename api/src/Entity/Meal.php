@@ -5,6 +5,7 @@ namespace App\Entity;
 use ApiPlatform\Doctrine\Orm\Filter\DateFilter;
 use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
@@ -13,10 +14,8 @@ use ApiPlatform\Metadata\Put;
 use App\Repository\MealRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
-use Symfony\Component\Serializer\Annotation\SerializedName;
 use Symfony\Component\Validator\Constraints as Assert;
 
 
@@ -29,12 +28,12 @@ use Symfony\Component\Validator\Constraints as Assert;
         new GetCollection(),
         new Post(),
         new Put(),
+        new Delete(),
         new Patch()
     ],
     normalizationContext: ['groups' => ['meal:read']],
     denormalizationContext: ['groups' => ['meal:write']],
 )]
-#[ApiFilter(DateFilter::class, strategy: DateFilter::EXCLUDE_NULL)]
 class Meal
 {
     public const MEAL_TIMES = [
@@ -47,30 +46,31 @@ class Meal
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['meal:read'])]
+    #[Groups(['meal:read', 'calendarMeal:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['meal:read', 'meal:write'])]
+    #[Groups(['meal:read', 'meal:write', 'calendarMeal:read', 'calendarMeal:write'])]
     private ?string $name = null;
 
     #[ORM\Column(type: 'string', length: 255, options: ['default' => 'breakfast'])]
     #[Assert\Choice(choices: self::MEAL_TIMES)]
-    #[Groups(['meal:read', 'meal:write'])]
+    #[Groups(['meal:read', 'meal:write', 'calendarMeal:read', 'calendarMeal:write'])]
     private ?string $mealTime;
 
     #[ORM\ManyToMany(targetEntity: IngredientInMeal::class, inversedBy: 'meals', cascade: ['persist'])]
-    #[Groups(['meal:read', 'meal:write'])]
+    #[Groups(['meal:read', 'meal:write', 'calendarMeal:write', 'calendarMeal:read'])]
     private Collection $ingredients;
 
-    #[ORM\Column(options: ['default' => 'CURRENT_TIMESTAMP'], type: Types::DATETIME_IMMUTABLE)]
-    private ?\DateTimeImmutable $date;
+    #[ORM\OneToMany(mappedBy: 'relatedMeal', targetEntity: CalendarMeal::class, orphanRemoval: true)]
+    #[Groups(['meal:read', 'meal:write', 'calendarMeal:read', 'calendarMeal:write'])]
+    private Collection $relatedCalendarMeal;
 
     public function __construct()
     {
         $this->ingredients = new ArrayCollection();
-        $this->date = new \DateTimeImmutable();
         $this->mealTime = 'breakfast';
+        $this->relatedCalendarMeal = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -114,17 +114,6 @@ class Meal
         return $this;
     }
 
-    public function getDate(): ?\DateTimeImmutable
-    {
-        return $this->date;
-    }
-
-    public function setDate(\DateTimeImmutable $date): static
-    {
-        $this->date = $date;
-
-        return $this;
-    }
 
     public function getMealTime(): ?string
     {
@@ -138,10 +127,33 @@ class Meal
         return $this;
     }
 
-    #[Groups(['meal:read'])]
-    #[SerializedName('date')]
-    public function getDateString(): ?string
+    /**
+     * @return Collection<int, CalendarMeal>
+     */
+    public function getRelatedCalendarMeal(): Collection
     {
-        return $this->date->format('Y-m-d');
+        return $this->relatedCalendarMeal;
+    }
+
+    public function addRelatedCalendarMeal(CalendarMeal $relatedCalendarMeal): static
+    {
+        if (!$this->relatedCalendarMeal->contains($relatedCalendarMeal)) {
+            $this->relatedCalendarMeal->add($relatedCalendarMeal);
+            $relatedCalendarMeal->setRelatedMeal($this);
+        }
+
+        return $this;
+    }
+
+    public function removeRelatedCalendarMeal(CalendarMeal $relatedCalendarMeal): static
+    {
+        if ($this->relatedCalendarMeal->removeElement($relatedCalendarMeal)) {
+            // set the owning side to null (unless already changed)
+            if ($relatedCalendarMeal->getRelatedMeal() === $this) {
+                $relatedCalendarMeal->setRelatedMeal(null);
+            }
+        }
+
+        return $this;
     }
 }
